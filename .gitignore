@@ -1,10 +1,16 @@
 ### Custom ignore
-.idea/*
+.idea/
 *.iml
-*/target/*
-out/*
-*/.mvn/*
-*/mvnw
+target/
+out/
+.mvn/
+mvnw*
+
+### ReactJS
+src/main/reactfrontend/node_modules/
+src/main/reactfrontend/node/
+src/main/reactfrontend/yarn.lock
+src/main/reactfrontend/package-lock.json
 
 # Compiled class file
 *.class

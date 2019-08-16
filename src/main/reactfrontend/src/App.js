@@ -220,7 +220,6 @@ class App extends Component {
         let key = event.value;
         this.setState({selectedNodeKey: key});
         let node = this.findNodeByKey(key);
-        this.growl.show({severity: 'info', summary: 'Node Selected', detail: node.key});
         this.setState({selectedNode: node});
     }
 
@@ -315,7 +314,7 @@ class App extends Component {
                         </Dialog>
 
                         <Dialog header="Change folder name" visible={this.state.changeNodeVisible} showHeader={false}
-                                footer={changeNodeFooter} >
+                                footer={changeNodeFooter} onHide={e => this.setState({changeNodeVisible: false})} >
 
                             <InputText label="Folder name" type="text" size="30"
                                        value={ (this.state.selectedNode != null) ? this.state.selectedNode.label : ""}

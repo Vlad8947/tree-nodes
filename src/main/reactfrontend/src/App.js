@@ -153,7 +153,6 @@ class App extends Component {
     }
 
     findNodeByKey(key) {
-        this.growl.show({severity: 'info', summary: 'Node Selected', detail: key});
         if (key != null) {
             let keys = key.split('-');
             let node = this.state.nodes[0];
@@ -223,9 +222,12 @@ class App extends Component {
 
     downloadChildren(node) {
         if (node != null) {
+            //todo заглушка для прогрузки
+            const children = node.children;
+            node.children = [];
             return new Promise(resolve => {
                 setTimeout(() => {
-                    resolve(node.children);
+                    resolve(children);
                 }, 2000);
             });
         }
@@ -238,6 +240,7 @@ class App extends Component {
 
     async setChildren(event) {
         const node = event.node;
+        //todo заглушка для прогрузки
         let isNonChildren = true;
         if (isNonChildren) {
             let spinnerIcon = "pi pi-spin pi-spinner";
@@ -249,8 +252,8 @@ class App extends Component {
         }
     }
 
-    componentDidMount() {
-
+    onExpand(event) {
+        this.setChildren(event);
     }
 
     render() {
@@ -323,7 +326,7 @@ class App extends Component {
                               onDragDrop={e => this.onDrugAndDrop(e)}
                               onContextMenuSelectionChange={e => this.onSelect(e)}
                               onContextMenu={event => this.nodeContMenu.show(event.originalEvent)}
-                              onExpand={e => this.setChildren(e)}
+                              onExpand={e => this.onExpand(e)}
                         />
 
                     </div>

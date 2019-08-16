@@ -10,6 +10,7 @@ import './App.css';
 import 'primereact/resources/themes/nova-light/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
+import 'primeflex/primeflex.css'
 
 class App extends Component {
 
@@ -273,20 +274,26 @@ class App extends Component {
 
         return (
             <div className="App">
-                <div className="App-header">
+                <div className="App-header p-grid p-align-center">
 
-                    <Button className="p-button-secondary" label={"Add folder in the root"} icon={"pi pi-plus-circle"}
-                                 onClick={(e) => this.addOP.toggle(e)} />
+                    <div id="add-folder" className="p-col-fixed">
+                        <Button className="p-button-secondary" label={"Add folder in the root"} icon={"pi pi-plus-circle"}
+                                onClick={(e) => this.addOP.toggle(e)} />
 
-                    <OverlayPanel ref={(e) => this.addOP = e} showCloseIcon={true}>
-                        <div className="p-inputgroup">
-                            <InputText label="Folder name" type="text" size="30"
-                                       value={this.state.addNodeName}
-                                       onChange={(e) => this.setState({addNodeName: e.target.value})}/>
-                            <Button label="Add" onClick={e => this.addFolderToRoot(e)}
-                                    disabled={(this.state.addNodeName == null || this.state.addNodeName.trim().length == 0) ? "disabled" : ""}/>
-                        </div>
-                    </OverlayPanel>
+                        <OverlayPanel ref={(e) => this.addOP = e} showCloseIcon={true}>
+                            <div className="p-inputgroup">
+                                <InputText label="Folder name" type="text" size="30"
+                                           value={this.state.addNodeName}
+                                           onChange={(e) => this.setState({addNodeName: e.target.value})}/>
+                                <Button label="Add" onClick={e => this.addFolderToRoot(e)}
+                                        disabled={(this.state.addNodeName == null || this.state.addNodeName.trim().length == 0) ? "disabled" : ""}/>
+                            </div>
+                        </OverlayPanel>
+                    </div>
+
+                    <div className="p-col-fixed">
+                        <span>To open the folder menu, right-click on the folder.</span>
+                    </div>
 
                 </div>
                 <div className="App-intro">

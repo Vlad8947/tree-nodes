@@ -10,6 +10,7 @@ import './App.css';
 import 'primereact/resources/themes/nova-light/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
+import 'primeflex/primeflex.css'
 
 class App extends Component {
 
@@ -153,10 +154,9 @@ class App extends Component {
     }
 
     findNodeByKey(key) {
-        this.growl.show({severity: 'info', summary: 'Node Selected', detail: key});
         if (key != null) {
             let keys = key.split('-');
-            let node = this.state.nodes[0];
+            let node = this.state.nodes[keys[0]];
             for (let i = 1; i < keys.length-1; i++) {
                 node = node[keys[i]];
             }
@@ -166,6 +166,8 @@ class App extends Component {
 
     addFolder(event) {
         let selectedNode = this.state.selectedNode;
+        this.growl.show({severity: 'info', summary: 'Node Selected', detail: selectedNode.key});
+
         let nodeKey = selectedNode.key + "-" + selectedNode.children.length;
         selectedNode.children.push({
             key: nodeKey,
@@ -173,13 +175,13 @@ class App extends Component {
             icon: "pi pi-folder",
         });
         this.setState({nodes: this.state.nodes});
-        this.setState({addNodeName: null});
+        this.setState({addNodeName: ""});
         this.setState({addNodeVisible: false})
     }
 
     addFolderToRoot() {
         let nodes = this.state.nodes;
-        let nodeKey = nodes.length;
+        let nodeKey = nodes.length.toString();
         nodes.push({
             key: nodeKey,
             label: this.state.addNodeName,
@@ -223,9 +225,12 @@ class App extends Component {
 
     downloadChildren(node) {
         if (node != null) {
+            //todo заглушка для прогрузки
+            const children = node.children;
+            node.children = [];
             return new Promise(resolve => {
                 setTimeout(() => {
-                    resolve(node.children);
+                    resolve(children);
                 }, 2000);
             });
         }
@@ -238,6 +243,7 @@ class App extends Component {
 
     async setChildren(event) {
         const node = event.node;
+        //todo заглушка для прогрузки
         let isNonChildren = true;
         if (isNonChildren) {
             let spinnerIcon = "pi pi-spin pi-spinner";
@@ -249,8 +255,8 @@ class App extends Component {
         }
     }
 
-    componentDidMount() {
-
+    onExpand(event) {
+        this.setChildren(event);
     }
 
     render() {
@@ -270,20 +276,26 @@ class App extends Component {
 
         return (
             <div className="App">
-                <div className="App-header">
+                <div className="App-header p-grid p-align-center">
 
-                    <Button className="p-button-secondary" label={"Add folder in the root"} icon={"pi pi-plus-circle"}
-                                 onClick={(e) => this.addOP.toggle(e)} />
+                    <div id="add-folder" className="p-col-fixed">
+                        <Button className="p-button-secondary" label={"Add folder in the root"} icon={"pi pi-plus-circle"}
+                                onClick={(e) => this.addOP.toggle(e)} />
 
-                    <OverlayPanel ref={(e) => this.addOP = e} showCloseIcon={true}>
-                        <div className="p-inputgroup">
-                            <InputText label="Folder name" type="text" size="30"
-                                       value={this.state.addNodeName}
-                                       onChange={(e) => this.setState({addNodeName: e.target.value})}/>
-                            <Button label="Add" onClick={e => this.addFolderToRoot(e)}
-                                    disabled={(this.state.addNodeName == null || this.state.addNodeName.trim().length == 0) ? "disabled" : ""}/>
-                        </div>
-                    </OverlayPanel>
+                        <OverlayPanel ref={(e) => this.addOP = e} showCloseIcon={true}>
+                            <div className="p-inputgroup">
+                                <InputText label="Folder name" type="text" size="30"
+                                           value={this.state.addNodeName}
+                                           onChange={(e) => this.setState({addNodeName: e.target.value})}/>
+                                <Button label="Add" onClick={e => this.addFolderToRoot(e)}
+                                        disabled={(this.state.addNodeName == null || this.state.addNodeName.trim().length == 0) ? "disabled" : ""}/>
+                            </div>
+                        </OverlayPanel>
+                    </div>
+
+                    <div className="p-col-fixed">
+                        <span>To open the folder menu, right-click on the folder.</span>
+                    </div>
 
                 </div>
                 <div className="App-intro">
@@ -302,7 +314,7 @@ class App extends Component {
                         </Dialog>
 
                         <Dialog header="Change folder name" visible={this.state.changeNodeVisible} showHeader={false}
-                                footer={changeNodeFooter} >
+                                footer={changeNodeFooter} onHide={e => this.setState({changeNodeVisible: false})} >
 
                             <InputText label="Folder name" type="text" size="30"
                                        value={ (this.state.selectedNode != null) ? this.state.selectedNode.label : ""}
@@ -323,7 +335,7 @@ class App extends Component {
                               onDragDrop={e => this.onDrugAndDrop(e)}
                               onContextMenuSelectionChange={e => this.onSelect(e)}
                               onContextMenu={event => this.nodeContMenu.show(event.originalEvent)}
-                              onExpand={e => this.setChildren(e)}
+                              onExpand={e => this.onExpand(e)}
                         />
 
                     </div>

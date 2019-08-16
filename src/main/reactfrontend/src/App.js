@@ -156,7 +156,7 @@ class App extends Component {
     findNodeByKey(key) {
         if (key != null) {
             let keys = key.split('-');
-            let node = this.state.nodes[0];
+            let node = this.state.nodes[keys[0]];
             for (let i = 1; i < keys.length-1; i++) {
                 node = node[keys[i]];
             }
@@ -166,6 +166,8 @@ class App extends Component {
 
     addFolder(event) {
         let selectedNode = this.state.selectedNode;
+        this.growl.show({severity: 'info', summary: 'Node Selected', detail: selectedNode.key});
+
         let nodeKey = selectedNode.key + "-" + selectedNode.children.length;
         selectedNode.children.push({
             key: nodeKey,
@@ -173,13 +175,13 @@ class App extends Component {
             icon: "pi pi-folder",
         });
         this.setState({nodes: this.state.nodes});
-        this.setState({addNodeName: null});
+        this.setState({addNodeName: ""});
         this.setState({addNodeVisible: false})
     }
 
     addFolderToRoot() {
         let nodes = this.state.nodes;
-        let nodeKey = nodes.length;
+        let nodeKey = nodes.length.toString();
         nodes.push({
             key: nodeKey,
             label: this.state.addNodeName,
@@ -218,6 +220,7 @@ class App extends Component {
         let key = event.value;
         this.setState({selectedNodeKey: key});
         let node = this.findNodeByKey(key);
+        this.growl.show({severity: 'info', summary: 'Node Selected', detail: node.key});
         this.setState({selectedNode: node});
     }
 

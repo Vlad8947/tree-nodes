@@ -17,34 +17,34 @@ public class NodeController {
     public NodeController() {
     }
 
-    @RequestMapping(method = RequestMethod.PUT)
+    @PutMapping
     public void put(@RequestBody Node node) {
         nodeService.save(node);
     }
 
-    @RequestMapping(method = RequestMethod.DELETE)
+    @DeleteMapping
     public void delete(@RequestParam long id) {
         nodeService.delete(id);
     }
 
-    @RequestMapping("/clear")
+    @DeleteMapping("/clear")
     public void clear() {
         nodeService.clear();
     }
 
-    @RequestMapping(method = RequestMethod.GET)
+    @GetMapping
     @ResponseBody
     public Node get(@RequestParam long id) {
         return nodeService.get(id);
     }
 
-    @RequestMapping("/root")
+    @GetMapping("/root")
     @ResponseBody
     public List<Node> getRootNodes() {
         return nodeService.getRoot();
     }
 
-    @RequestMapping("/children")
+    @GetMapping("/children")
     @ResponseBody
     public List<Node> getChildren(@RequestParam long id) {
         return nodeService.getChildren(id);

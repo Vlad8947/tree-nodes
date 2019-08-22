@@ -18,6 +18,7 @@ class App extends Component {
         super();
         this.state = {
             nodes: [],
+            globalLoading: true,
             selectedNodeKey: null,
             selectedNode: null,
             addNodeName: null,
@@ -66,7 +67,7 @@ class App extends Component {
         if (key != null) {
             let keys = key.split('-');
             let node = this.state.nodes[keys[0]];
-            for (let i = 1; i < keys.length-1; i++) {
+            for (let i = 1; i < keys.length - 1; i++) {
                 node = node[keys[i]];
             }
             return node;
@@ -109,11 +110,11 @@ class App extends Component {
         let indexes = nodeKey.split('-');
         let parentNode = this.state.nodes;
         let childIndex = indexes[0];
-        for (let i = 0; i < indexes.length-1; i++) {
+        for (let i = 0; i < indexes.length - 1; i++) {
             parentNode = parentNode[childIndex].children;
-            childIndex = indexes[i+1];
+            childIndex = indexes[i + 1];
         }
-        parentNode.splice(childIndex,1);
+        parentNode.splice(childIndex, 1);
         this.initNodes(nodes, null);
         this.setState({nodes: nodes});
     }
@@ -134,12 +135,19 @@ class App extends Component {
 
     downloadChildren(node) {
         if (node != null) {
-            //todo заглушка для прогрузки
-            const children = node.children;
-            node.children = [];
             return new Promise(resolve => {
                 setTimeout(() => {
-                    resolve(children);
+                    fetch(`/api/node/children?id=${node.id}`, {
+                        method: "GET",
+                        headers: {
+                            "Authorization": "any",
+                            "Accept": "application/json",
+                            "Content-Type": 'application/json'
+                        }
+                    }).then(res => res.json())
+                        .then(children => {
+                            resolve(children);
+                        });
                 }, 2000);
             });
         }
@@ -150,52 +158,58 @@ class App extends Component {
         this.setState({nodes: this.state.nodes});
     }
 
-    async setChildren(event) {
+    async loadChildren(event) {
         const node = event.node;
-        //todo заглушка для прогрузки
-        let isNonChildren = true;
-        if (isNonChildren) {
-            let spinnerIcon = "pi pi-spin pi-spinner";
-            let folderIcon = "pi pi-folder";
-            this.setIcon(node, spinnerIcon);
-            const children = await this.downloadChildren(node);
-            node.children = children;
-            this.setIcon(node, folderIcon);
+        if (node.isLoaded) {
+            return;
         }
+        let spinnerIcon = "pi pi-spin pi-spinner";
+        let folderIcon = "pi pi-folder";
+        this.setIcon(node, spinnerIcon);
+        const children = await this.downloadChildren(node);
+        for (let i = 0; i < children.length; i++) {
+            children[i].isLoaded = false;
+        }
+        this.initNodes(children, null);
+        node.children = children;
+        this.setIcon(node, folderIcon);
     }
 
     onExpand(event) {
-        this.setChildren(event);
+        this.loadChildren(event);
     }
 
     componentDidMount() {
-        fetch("/api/node/root", {
-            method: "GET",
-            headers: {
-                "Authorization": "any",
-                "Accept": "application/json",
-                "Content-Type": 'application/json'
-            }
-        }).then(res => res.json())
-            .then(result => {
-                this.initNodes(result, null);
-                this.setState({nodes: result});
-            });
-
+        setTimeout(() => {
+            fetch("/api/node/root", {
+                method: "GET",
+                headers: {
+                    "Authorization": "any",
+                    "Accept": "application/json",
+                    "Content-Type": 'application/json'
+                }
+            }).then(res => res.json())
+                .then(result => {
+                    result.isLoaded = false;
+                    this.initNodes(result, null);
+                    this.setState({nodes: result});
+                    this.setState({globalLoading: false})
+                });
+        }, 2000);
     }
 
     render() {
         const addNodeFooter = (
             <div>
                 <Button icon="pi pi-check" onClick={e => this.addFolder(e)}
-                        disabled={(this.state.addNodeName == null || this.state.addNodeName.trim().length == 0) ? "disabled" : ""} />
+                        disabled={(this.state.addNodeName == null || this.state.addNodeName.trim().length == 0) ? "disabled" : ""}/>
             </div>
         );
 
         const changeNodeFooter = (
             <div>
                 <Button icon="pi pi-check" onClick={e => this.setState({changeNodeVisible: false})}
-                        disabled={(this.state.selectedNode == null || this.state.selectedNode.label.trim().length == 0) ? "disabled" : ""} />
+                        disabled={(this.state.selectedNode == null || this.state.selectedNode.label.trim().length == 0) ? "disabled" : ""}/>
             </div>
         );
 
@@ -204,8 +218,9 @@ class App extends Component {
                 <div className="App-header p-grid p-align-center">
 
                     <div id="add-folder" className="p-col-fixed">
-                        <Button className="p-button-secondary" label={"Add folder in the root"} icon={"pi pi-plus-circle"}
-                                onClick={(e) => this.addOP.toggle(e)} />
+                        <Button className="p-button-secondary" label={"Add folder in the root"}
+                                icon={"pi pi-plus-circle"}
+                                onClick={(e) => this.addOP.toggle(e)}/>
 
                         <OverlayPanel ref={(e) => this.addOP = e} showCloseIcon={true}>
                             <div className="p-inputgroup">
@@ -228,21 +243,21 @@ class App extends Component {
 
                     <div className="content-section implementation">
 
-                        <ContextMenu model={this.state.nodeMenu} ref={el => this.nodeContMenu = el} />
+                        <ContextMenu model={this.state.nodeMenu} ref={el => this.nodeContMenu = el}/>
 
                         <Dialog header="Enter a label of a New Folder" visible={this.state.addNodeVisible}
-                                footer={addNodeFooter} onHide={e => this.setState({addNodeVisible: false})} >
+                                footer={addNodeFooter} onHide={e => this.setState({addNodeVisible: false})}>
 
                             <InputText label="Enter a label for New Folder" type="text" size="30"
                                        value={this.state.addNodeName}
-                                       onChange={e => this.setState({addNodeName: e.target.value})} />
+                                       onChange={e => this.setState({addNodeName: e.target.value})}/>
                         </Dialog>
 
                         <Dialog header="Change folder name" visible={this.state.changeNodeVisible} showHeader={false}
-                                footer={changeNodeFooter} onHide={e => this.setState({changeNodeVisible: false})} >
+                                footer={changeNodeFooter} onHide={e => this.setState({changeNodeVisible: false})}>
 
                             <InputText label="Folder name" type="text" size="30"
-                                       value={ (this.state.selectedNode != null) ? this.state.selectedNode.label : ""}
+                                       value={(this.state.selectedNode != null) ? this.state.selectedNode.label : ""}
                                        onChange={e => {
                                            let node = this.findNodeByKey(this.state.selectedNodeKey);
                                            if (node != null) {
@@ -261,6 +276,7 @@ class App extends Component {
                               onContextMenuSelectionChange={e => this.onSelect(e)}
                               onContextMenu={event => this.nodeContMenu.show(event.originalEvent)}
                               onExpand={e => this.onExpand(e)}
+                              loading={this.state.globalLoading}
                         />
 
                     </div>

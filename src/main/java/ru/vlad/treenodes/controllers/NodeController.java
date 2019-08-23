@@ -18,8 +18,9 @@ public class NodeController {
     }
 
     @PutMapping
-    public void put(@RequestBody Node node) {
-        nodeService.save(node);
+    @ResponseBody
+    public Node put(@RequestBody Node node) {
+        return nodeService.save(node);
     }
 
     @DeleteMapping
@@ -46,8 +47,8 @@ public class NodeController {
 
     @GetMapping("/children")
     @ResponseBody
-    public List<Node> getChildren(@RequestParam long id) {
-        return nodeService.getChildren(id);
+    public List<Node> getChildren(@RequestParam long parentId) {
+        return nodeService.getChildren(parentId);
     }
 
 }

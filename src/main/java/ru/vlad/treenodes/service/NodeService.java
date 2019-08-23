@@ -17,12 +17,12 @@ public class NodeService {
     public NodeService() {
     }
 
-    public void save(Node node) {
-        nodeRepository.save(node);
+    public Node save(Node node) {
+        return nodeRepository.save(node);
     }
 
     public List<Node> getRoot() {
-         return nodeRepository.findByParentIsNull();
+         return nodeRepository.findByParentIdIsNull();
     }
 
     public Node get(long id) {
@@ -34,7 +34,7 @@ public class NodeService {
     }
 
     public List<Node> getChildren(long id) {
-        return get(id).getChildren();
+        return nodeRepository.findByParentId(id);
     }
 
     public void delete(long id) {

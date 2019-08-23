@@ -1,16 +1,18 @@
 package ru.vlad.treenodes;
 
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import javax.sql.DataSource;
 
-//@Configuration
+@Configuration
 public class DataSourceConfig {
 
     public DataSourceConfig() {
     }
 
-//    @Bean(name="dataSource")
+    @Bean(name="dataSource")
     public DataSource getDataSource(){
         // Создаем источник данных
         DriverManagerDataSource dataSource = new DriverManagerDataSource();

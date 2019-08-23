@@ -9,5 +9,6 @@ import java.util.List;
 @Repository
 public interface NodeRepository extends CrudRepository<Node, Long> {
 
-    List<Node> findByParentIsNull();
+    List<Node> findByParentId(long id);
+    List<Node> findByParentIdIsNull();
 }

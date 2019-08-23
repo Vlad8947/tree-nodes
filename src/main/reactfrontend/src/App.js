@@ -12,6 +12,8 @@ import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 import 'primeflex/primeflex.css'
 
+const FOLDER_ICON = "pi pi-folder";
+
 class App extends Component {
 
     constructor() {
@@ -29,14 +31,18 @@ class App extends Component {
                     label: 'Add folder into',
                     icon: 'pi pi-plus',
                     command: (e) => {
-                        this.setState({addNodeVisible: true});
+                        this.setState((state) => {
+                            return {addNodeVisible: true}
+                        });
                     }
                 },
                 {
                     label: 'Change label',
                     icon: 'pi pi-pencil',
                     command: (e) => {
-                        this.setState({changeNodeVisible: true});
+                        this.setState((state) => {
+                            return {changeNodeVisible: true}
+                        });
                     }
                 },
                 {
@@ -51,14 +57,20 @@ class App extends Component {
         let nodes = this.initNodes(this.state.nodes, null);
     }
 
-    initNodes(nodes, parentKey) {
+    async initNodes(nodes, parentNode) {
         if (nodes) {
             let node;
             for (let i = 0; i < nodes.length; i++) {
                 node = nodes[i];
-                node.key = (parentKey != null) ? (parentKey + "-" + i) : i.toString();
+                if (parentNode != null) {
+                    node.key = parentNode.key + "-" + i;
+                    node.parentId = parentNode.id;
+                } else {
+                    node.key = i.toString();
+                    node.parentId = null;
+                }
                 node.icon = "pi pi-folder";
-                this.initNodes(node.children, node.key);
+                this.initNodes(node.children, node);
             }
         }
     }
@@ -76,29 +88,69 @@ class App extends Component {
 
     addFolder(event) {
         let selectedNode = this.state.selectedNode;
-        this.growl.show({severity: 'info', summary: 'Node Selected', detail: selectedNode.key});
-
-        let nodeKey = selectedNode.key + "-" + selectedNode.children.length;
-        selectedNode.children.push({
+        let childrenLength;
+        if (selectedNode.children == null) {
+            childrenLength = 0;
+            selectedNode.children = [];
+        } else {
+            childrenLength = selectedNode.children.length;
+        }
+        let nodeKey = selectedNode.key + "-" + childrenLength;
+        let node = {
             key: nodeKey,
             label: this.state.addNodeName,
-            icon: "pi pi-folder",
+            icon: FOLDER_ICON,
+            children: [],
+            parentId: selectedNode.id,
+            leaf: false
+        };
+        this.putRequest(node);
+        this.state.selectedNode.children.push(node);
+
+        this.setState((state) => {
+            return {nodes: state.nodes}
         });
-        this.setState({nodes: this.state.nodes});
-        this.setState({addNodeName: ""});
-        this.setState({addNodeVisible: false})
+        this.setState((state) => {
+            return {addNodeName: ""};
+        });
+        this.setState((state) => {
+            return {addNodeVisible: false}
+        });
     }
 
     addFolderToRoot() {
         let nodes = this.state.nodes;
         let nodeKey = nodes.length.toString();
-        nodes.push({
+        let node = {
             key: nodeKey,
             label: this.state.addNodeName,
-            icon: "pi pi-folder",
+            icon: FOLDER_ICON,
+            children: null,
+            parent: null,
+            leaf: false
+        };
+        this.putRequest(node);
+        nodes.push(node);
+        this.setState((state) => {
+            return {nodes: state.nodes}
         });
-        this.setState({nodes: this.state.nodes});
-        this.setState({addNodeName: ""});
+        this.setState((state) => {
+            return {addNodeName: ""}
+        });
+    }
+
+    putRequest(node) {
+        fetch(`/api/node`, {
+            method: "PUT",
+            headers: {
+                'Content-type': 'application/json; charset=UTF-8' // Indicates the content
+            },
+            body: JSON.stringify(node)
+        }).then(res => res.json())
+            .then(
+                resNode => {
+                   node.id = resNode.id;
+                });
     }
 
     deleteFolder(event) {
@@ -108,36 +160,59 @@ class App extends Component {
             return;
         }
         let indexes = nodeKey.split('-');
-        let parentNode = this.state.nodes;
+        let parentChildren = nodes;
         let childIndex = indexes[0];
         for (let i = 0; i < indexes.length - 1; i++) {
-            parentNode = parentNode[childIndex].children;
+            parentChildren = parentChildren[childIndex].children;
             childIndex = indexes[i + 1];
         }
-        parentNode.splice(childIndex, 1);
+        const id = parentChildren[childIndex].id;
+        parentChildren.splice(childIndex, 1);
+        fetch(`/api/node?id=${id}`, {
+            method: "DELETE"
+        });
         this.initNodes(nodes, null);
-        this.setState({nodes: nodes});
+        this.setState((state) => {
+            return {nodes: nodes}
+        });
     }
 
     onDrugAndDrop(e) {
-        this.setState({selectedNodeKey: null});
         let nodes = e.value;
         this.initNodes(nodes, null);
-        this.setState({nodes: nodes});
+        this.setState((state) => {
+            return {nodes: nodes}
+        });
+        this.saveAll(nodes);
+    }
+
+    saveAll(nodes) {
+        if (nodes == null) {
+            return;
+        }
+        for (let i = 0; i < nodes.length; i++) {
+            let node = nodes[i];
+            this.putRequest(node);
+            this.saveAll(node.children);
+        }
     }
 
     onSelect(event) {
         let key = event.value;
-        this.setState({selectedNodeKey: key});
+        this.setState((state) => {
+            return {selectedNodeKey: key}
+        });
         let node = this.findNodeByKey(key);
-        this.setState({selectedNode: node});
+        this.setState((state) => {
+            return {selectedNode: node}
+        });
     }
 
     downloadChildren(node) {
         if (node != null) {
             return new Promise(resolve => {
                 setTimeout(() => {
-                    fetch(`/api/node/children?id=${node.id}`, {
+                    fetch(`/api/node/children?parentId=${node.id}`, {
                         method: "GET",
                         headers: {
                             "Authorization": "any",
@@ -145,9 +220,13 @@ class App extends Component {
                             "Content-Type": 'application/json'
                         }
                     }).then(res => res.json())
-                        .then(children => {
-                            resolve(children);
-                        });
+                        .then(
+                            children => {
+                                resolve(children);
+                            },
+                            (error) => {
+                                resolve(null);
+                            });
                 }, 2000);
             });
         }
@@ -155,23 +234,33 @@ class App extends Component {
 
     setIcon(node, icon) {
         node.icon = icon;
-        this.setState({nodes: this.state.nodes});
+        this.setState((state) => {
+            return {nodes: state.nodes}
+        });
     }
 
     async loadChildren(event) {
         const node = event.node;
-        if (node.isLoaded) {
+        const oldChildren = node.children;
+        if (node.leaf) {
             return;
         }
+        node.children = null;
         let spinnerIcon = "pi pi-spin pi-spinner";
         let folderIcon = "pi pi-folder";
         this.setIcon(node, spinnerIcon);
         const children = await this.downloadChildren(node);
-        for (let i = 0; i < children.length; i++) {
-            children[i].isLoaded = false;
+        if (children != null) {
+            for (let i = 0; i < children.length; i++) {
+                children[i].leaf = false;
+            }
+            this.initNodes(children, null);
+            node.children = children;
         }
-        this.initNodes(children, null);
-        node.children = children;
+        else {
+            node.children = oldChildren;
+        }
+        node.leaf = true;
         this.setIcon(node, folderIcon);
     }
 
@@ -189,12 +278,25 @@ class App extends Component {
                     "Content-Type": 'application/json'
                 }
             }).then(res => res.json())
-                .then(result => {
-                    result.isLoaded = false;
-                    this.initNodes(result, null);
-                    this.setState({nodes: result});
-                    this.setState({globalLoading: false})
-                });
+                .then(
+                    result => {
+                        let rootNodes = result;
+                        for (let i = 0; i < result.length; i++) {
+                            rootNodes[i].leaf = false;
+                        }
+                        this.initNodes(rootNodes, null);
+                        this.setState((state) => {
+                            return {nodes: rootNodes}
+                        });
+                        this.setState((state) => {
+                            return ({globalLoading: false})
+                        })
+                    },
+                    (error) => {
+                        this.setState((state) => {
+                            return {globalLoading: false, error}
+                        });
+                    });
         }, 2000);
     }
 
@@ -208,7 +310,9 @@ class App extends Component {
 
         const changeNodeFooter = (
             <div>
-                <Button icon="pi pi-check" onClick={e => this.setState({changeNodeVisible: false})}
+                <Button icon="pi pi-check" onClick={e => this.setState((state) => {
+                    return {changeNodeVisible: false}
+                })}
                         disabled={(this.state.selectedNode == null || this.state.selectedNode.label.trim().length == 0) ? "disabled" : ""}/>
             </div>
         );
@@ -226,7 +330,9 @@ class App extends Component {
                             <div className="p-inputgroup">
                                 <InputText label="Folder name" type="text" size="30"
                                            value={this.state.addNodeName}
-                                           onChange={(e) => this.setState({addNodeName: e.target.value})}/>
+                                           onChange={(e) => this.setState((state) => {
+                                               return {addNodeName: e.target.value}
+                                           })}/>
                                 <Button label="Add" onClick={e => this.addFolderToRoot(e)}
                                         disabled={(this.state.addNodeName == null || this.state.addNodeName.trim().length == 0) ? "disabled" : ""}/>
                             </div>
@@ -246,14 +352,19 @@ class App extends Component {
                         <ContextMenu model={this.state.nodeMenu} ref={el => this.nodeContMenu = el}/>
 
                         <Dialog header="Enter a label of a New Folder" visible={this.state.addNodeVisible}
-                                footer={addNodeFooter} onHide={e => this.setState({addNodeVisible: false})}>
+                                footer={addNodeFooter} onHide={e => this.setState((state) => {
+                                    return {addNodeVisible: false}
+                        })}>
 
                             <InputText label="Enter a label for New Folder" type="text" size="30"
                                        value={this.state.addNodeName}
-                                       onChange={e => this.setState({addNodeName: e.target.value})}/>
+                                       onChange={e => this.setState((state) => {
+                                           return {addNodeName: e.target.value}
+                                       })}/>
                         </Dialog>
 
-                        <Dialog header="Change folder name" visible={this.state.changeNodeVisible} showHeader={false}
+                        <Dialog header="Change folder name" visible={this.state.changeNodeVisible}
+                                showHeader={false}
                                 footer={changeNodeFooter} onHide={e => this.setState({changeNodeVisible: false})}>
 
                             <InputText label="Folder name" type="text" size="30"
@@ -262,7 +373,9 @@ class App extends Component {
                                            let node = this.findNodeByKey(this.state.selectedNodeKey);
                                            if (node != null) {
                                                node.label = e.target.value;
-                                               this.setState({nodes: this.state.nodes})
+                                               this.setState((state) => {
+                                                   return {nodes: state.nodes}
+                                               })
                                            }
                                        }}
                             />
@@ -273,7 +386,7 @@ class App extends Component {
                               onSelectionChange={e => this.onSelect(e)}
                               dragdropScope="demo"
                               onDragDrop={e => this.onDrugAndDrop(e)}
-                              onContextMenuSelectionChange={e => this.onSelect(e)}
+                              onContextMenuSelectionChange={e => {this.onSelect(e);}}
                               onContextMenu={event => this.nodeContMenu.show(event.originalEvent)}
                               onExpand={e => this.onExpand(e)}
                               loading={this.state.globalLoading}

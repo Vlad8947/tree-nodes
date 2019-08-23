@@ -14,15 +14,10 @@ public class Node {
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     private long id;
+    private String key;
     private String label;
-
-    @ManyToOne
-    @JoinColumn(name="parent_id")
-    private Node parent;
-    @OneToMany(mappedBy = "parent")
+    private Long parentId;
+    @OneToMany(mappedBy = "parentId", cascade = CascadeType.ALL)
     private List<Node> children;
 
-
-    public Node() {
-    }
 }

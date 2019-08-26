@@ -79,8 +79,8 @@ class App extends Component {
         if (key != null) {
             let keys = key.split('-');
             let node = this.state.nodes[keys[0]];
-            for (let i = 1; i < keys.length - 1; i++) {
-                node = node[keys[i]];
+            for (let i = 1; i < keys.length; i++) {
+                node = node.children[keys[i]];
             }
             return node;
         }
@@ -366,7 +366,7 @@ class App extends Component {
                             <InputText label="Folder name" type="text" size="30"
                                        value={(this.state.selectedNode != null) ? this.state.selectedNode.label : ""}
                                        onChange={e => {
-                                           let node = this.findNodeByKey(this.state.selectedNodeKey);
+                                           let node = this.state.selectedNode;
                                            if (node != null) {
                                                node.label = e.target.value;
                                                this.setState((state) => {

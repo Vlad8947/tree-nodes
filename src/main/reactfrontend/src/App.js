@@ -330,9 +330,7 @@ class App extends Component {
                             <div className="p-inputgroup">
                                 <InputText label="Folder name" type="text" size="30"
                                            value={this.state.addNodeName}
-                                           onChange={(e) => this.setState((state) => {
-                                               return {addNodeName: e.target.value}
-                                           })}/>
+                                           onChange={(e) => this.setState({addNodeName: e.target.value})}/>
                                 <Button label="Add" onClick={e => this.addFolderToRoot(e)}
                                         disabled={(this.state.addNodeName == null || this.state.addNodeName.trim().length == 0) ? "disabled" : ""}/>
                             </div>
@@ -358,9 +356,7 @@ class App extends Component {
 
                             <InputText label="Enter a label for New Folder" type="text" size="30"
                                        value={this.state.addNodeName}
-                                       onChange={e => this.setState((state) => {
-                                           return {addNodeName: e.target.value}
-                                       })}/>
+                                       onChange={e => this.setState({addNodeName: e.target.value})}/>
                         </Dialog>
 
                         <Dialog header="Change folder name" visible={this.state.changeNodeVisible}
